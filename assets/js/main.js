@@ -1,309 +1,150 @@
-const storageKey = "STORAGE_KEY";
+document.addEventListener("DOMContentLoaded", () => {
+  const books = [];
+  const RENDER_EVENT = "render-book";
 
-const formAddingBook = document.getElementById("inputBook");
-const formSearchingBook = document.getElementById("searchBook");
+  const inputBookForm = document.getElementById("inputBook");
+  const searchBookForm = document.getElementById("searchBook");
 
-function CheckForStorage() {
-  return typeof Storage !== "undefined";
-}
+  inputBookForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    addBook();
+  });
 
-formAddingBook.addEventListener("submit", function (event) {
-  const title = document.getElementById("inputBookTitle").value;
-  const author = document.getElementById("inputBookAuthor").value;
-  const year = parseInt(document.getElementById("inputBookYear").value);
-  const isComplete = document.getElementById("inputBookIsComplete").checked;
+  searchBookForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    searchBook();
+  });
 
-  const idTemp = document.getElementById("inputBookTitle").name;
-  if (idTemp !== "") {
-    const bookData = GetBookList();
-    for (let index = 0; index < bookData.length; index++) {
-      if (bookData[index].id == idTemp) {
-        bookData[index].title = title;
-        bookData[index].author = author;
-        bookData[index].year = year;
-        bookData[index].isComplete = isComplete;
-      }
-    }
-    localStorage.setItem(storageKey, JSON.stringify(bookData));
-    ResetAllForm();
-    RenderBookList(bookData);
-    return;
+  function addBook() {
+    const bookTitle = document.getElementById("inputBookTitle").value;
+    const bookAuthor = document.getElementById("inputBookAuthor").value;
+    const bookYear = document.getElementById("inputBookYear").value;
+    const bookIsComplete = document.getElementById(
+      "inputBookIsComplete"
+    ).checked;
+
+    const generatedID = generateId();
+    const bookObject = generateBookObject(
+      generatedID,
+      bookTitle,
+      bookAuthor,
+      bookYear,
+      bookIsComplete
+    );
+    books.push(bookObject);
+
+    document.dispatchEvent(new Event(RENDER_EVENT));
   }
 
-  const id =
-    JSON.parse(localStorage.getItem(storageKey)) === null
-      ? 0 + Date.now()
-      : JSON.parse(localStorage.getItem(storageKey)).length + Date.now();
-  const newBook = {
-    id: id,
-    title: title,
-    author: author,
-    year: year,
-    isComplete: isComplete,
-  };
-
-  PutBookList(newBook);
-
-  const bookData = GetBookList();
-  RenderBookList(bookData);
-});
-
-function PutBookList(data) {
-  if (CheckForStorage()) {
-    let bookData = [];
-
-    if (localStorage.getItem(storageKey) !== null) {
-      bookData = JSON.parse(localStorage.getItem(storageKey));
-    }
-
-    bookData.push(data);
-    localStorage.setItem(storageKey, JSON.stringify(bookData));
-  }
-}
-
-function RenderBookList(bookData) {
-  if (bookData === null) {
-    return;
+  function generateId() {
+    return +new Date();
   }
 
-  const containerIncomplete = document.getElementById(
-    "incompleteBookshelfList"
-  );
-  const containerComplete = document.getElementById("completeBookshelfList");
+  function generateBookObject(id, title, author, year, isComplete) {
+    return {
+      id,
+      title,
+      author,
+      year,
+      isComplete,
+    };
+  }
 
-  containerIncomplete.innerHTML = "";
-  containerComplete.innerHTML = "";
-  for (let book of bookData) {
-    const id = book.id;
-    const title = book.title;
-    const author = book.author;
-    const year = book.year;
-    const isComplete = book.isComplete;
+  function searchBook() {
+    const searchBookTitle = document
+      .getElementById("searchBookTitle")
+      .value.toLowerCase();
+    const filteredBooks = books.filter((book) =>
+      book.title.toLowerCase().includes(searchBookTitle)
+    );
+    renderBookList(filteredBooks);
+  }
 
-    //create isi item
-    let bookItem = document.createElement("article");
-    bookItem.classList.add("book_item", "select_item");
-    bookItem.innerHTML = "<h3 name = " + id + ">" + title + "</h3>";
-    bookItem.innerHTML += "<p>Penulis: " + author + "</p>";
-    bookItem.innerHTML += "<p>Tahun: " + year + "</p>";
+  function renderBookList(bookData) {
+    const containerIncomplete = document.getElementById(
+      "incompleteBookshelfList"
+    );
+    const containerComplete = document.getElementById("completeBookshelfList");
 
-    //container action item
-    let containerActionItem = document.createElement("div");
-    containerActionItem.classList.add("action");
+    containerIncomplete.innerHTML = "";
+    containerComplete.innerHTML = "";
 
-    //green button
-    const greenButton = CreateGreenButton(book, function (event) {
-      isCompleteBookHandler(event.target.parentElement.parentElement);
+    bookData.forEach((book) => {
+      const bookItem = document.createElement("article");
+      bookItem.classList.add("book_item", "select_item");
+      bookItem.setAttribute("data-testid", "bookItem");
+      bookItem.innerHTML = `
+        <h3 name="${book.id}" data-testid="bookItemTitle">${book.title}</h3>
+        <p data-testid="bookItemAuthor">Penulis: ${book.author}</p>
+        <p data-testid="bookItemYear">Tahun: ${book.year}</p>
+      `;
 
-      const bookData = GetBookList();
-      ResetAllForm();
-      RenderBookList(bookData);
-    });
+      const containerActionItem = document.createElement("div");
+      containerActionItem.classList.add("action");
 
-    //red button
-    const redButton = CreateRedButton(function (event) {
-      DeleteAnItem(event.target.parentElement.parentElement);
+      const greenButton = createButton(
+        book.isComplete ? "Belum selesai di Baca" : "Selesai di Baca",
+        "green",
+        () => {
+          toggleCompleteStatus(book.id);
+          renderBookList(books);
+        }
+      );
+      greenButton.setAttribute("data-testid", "bookItemIsCompleteButton");
 
-      const bookData = GetBookList();
-      ResetAllForm();
-      RenderBookList(bookData);
-    });
-
-    containerActionItem.append(greenButton, redButton);
-
-    bookItem.append(containerActionItem);
-
-    //incomplete book
-    if (isComplete === false) {
-      containerIncomplete.append(bookItem);
-      bookItem.childNodes[0].addEventListener("click", function (event) {
-        UpdateAnItem(event.target.parentElement);
+      const redButton = createButton("Hapus buku", "red", () => {
+        deleteBook(book.id);
+        renderBookList(books);
       });
+      redButton.setAttribute("data-testid", "bookItemDeleteButton");
 
-      continue;
-    }
+      containerActionItem.append(greenButton, redButton);
+      bookItem.append(containerActionItem);
 
-    //complete book
-    containerComplete.append(bookItem);
+      if (book.isComplete) {
+        containerComplete.append(bookItem);
+      } else {
+        containerIncomplete.append(bookItem);
+      }
 
-    bookItem.childNodes[0].addEventListener("click", function (event) {
-      UpdateAnItem(event.target.parentElement);
+      bookItem
+        .querySelector("h3")
+        .addEventListener("click", () => updateBookForm(book));
     });
   }
-}
 
-function CreateGreenButton(book, eventListener) {
-  const isSelesai = book.isComplete ? "Belum selesai" : "Selesai";
+  function createButton(buttonText, buttonTypeClass, eventListener) {
+    const button = document.createElement("button");
+    button.innerText = buttonText;
+    button.classList.add(buttonTypeClass);
+    button.addEventListener("click", eventListener);
+    return button;
+  }
 
-  const greenButton = document.createElement("button");
-  greenButton.classList.add("green");
-  greenButton.innerText = isSelesai + " di Baca";
-  greenButton.addEventListener("click", function (event) {
-    eventListener(event);
+  function toggleCompleteStatus(bookId) {
+    const bookTarget = books.find((book) => book.id === bookId);
+    if (bookTarget == null) return;
+
+    bookTarget.isComplete = !bookTarget.isComplete;
+    document.dispatchEvent(new Event(RENDER_EVENT));
+  }
+
+  function deleteBook(bookId) {
+    const bookTargetIndex = books.findIndex((book) => book.id === bookId);
+    if (bookTargetIndex === -1) return;
+
+    books.splice(bookTargetIndex, 1);
+    document.dispatchEvent(new Event(RENDER_EVENT));
+  }
+
+  function updateBookForm(book) {
+    document.getElementById("inputBookTitle").value = book.title;
+    document.getElementById("inputBookAuthor").value = book.author;
+    document.getElementById("inputBookYear").value = book.year;
+    document.getElementById("inputBookIsComplete").checked = book.isComplete;
+  }
+
+  document.addEventListener(RENDER_EVENT, () => {
+    renderBookList(books);
   });
-  return greenButton;
-}
-function CreateRedButton(eventListener) {
-  const redButton = document.createElement("button");
-  redButton.classList.add("red");
-  redButton.innerText = "Hapus buku";
-  redButton.addEventListener("click", function (event) {
-    eventListener(event);
-  });
-  return redButton;
-}
-
-function isCompleteBookHandler(itemElement) {
-  const bookData = GetBookList();
-  if (bookData.length === 0) {
-    return;
-  }
-
-  const title = itemElement.childNodes[0].innerText;
-  const titleNameAttribut = itemElement.childNodes[0].getAttribute("name");
-  for (let index = 0; index < bookData.length; index++) {
-    if (
-      bookData[index].title === title &&
-      bookData[index].id == titleNameAttribut
-    ) {
-      bookData[index].isComplete = !bookData[index].isComplete;
-      break;
-    }
-  }
-  localStorage.setItem(storageKey, JSON.stringify(bookData));
-}
-
-function SearchBookList(title) {
-  const bookData = GetBookList();
-  if (bookData.length === 0) {
-    return;
-  }
-
-  const bookList = [];
-
-  for (let index = 0; index < bookData.length; index++) {
-    const tempTitle = bookData[index].title.toLowerCase();
-    const tempTitleTarget = title.toLowerCase();
-    if (
-      bookData[index].title.includes(title) ||
-      tempTitle.includes(tempTitleTarget)
-    ) {
-      bookList.push(bookData[index]);
-    }
-  }
-  return bookList;
-}
-
-function GreenButtonHandler(parentElement) {
-  let book = isCompleteBookHandler(parentElement);
-  book.isComplete = !book.isComplete;
-}
-
-function GetBookList() {
-  if (CheckForStorage) {
-    return JSON.parse(localStorage.getItem(storageKey));
-  }
-  return [];
-}
-
-function DeleteAnItem(itemElement) {
-  const bookData = GetBookList();
-  if (bookData.length === 0) {
-    return;
-  }
-
-  const titleNameAttribut = itemElement.childNodes[0].getAttribute("name");
-  for (let index = 0; index < bookData.length; index++) {
-    if (bookData[index].id == titleNameAttribut) {
-      bookData.splice(index, 1);
-      break;
-    }
-  }
-
-  localStorage.setItem(storageKey, JSON.stringify(bookData));
-}
-
-function UpdateAnItem(itemElement) {
-  if (
-    itemElement.id === "incompleteBookshelfList" ||
-    itemElement.id === "completeBookshelfList"
-  ) {
-    return;
-  }
-
-  const bookData = GetBookList();
-  if (bookData.length === 0) {
-    return;
-  }
-
-  const title = itemElement.childNodes[0].innerText;
-  const author = itemElement.childNodes[1].innerText.slice(
-    9,
-    itemElement.childNodes[1].innerText.length
-  );
-  const getYear = itemElement.childNodes[2].innerText.slice(
-    7,
-    itemElement.childNodes[2].innerText.length
-  );
-  const year = parseInt(getYear);
-
-  const isComplete =
-    itemElement.childNodes[3].childNodes[0].innerText.length ===
-    "Selesai di baca".length
-      ? false
-      : true;
-
-  const id = itemElement.childNodes[0].getAttribute("name");
-  document.getElementById("inputBookTitle").value = title;
-  document.getElementById("inputBookTitle").name = id;
-  document.getElementById("inputBookAuthor").value = author;
-  document.getElementById("inputBookYear").value = year;
-  document.getElementById("inputBookIsComplete").checked = isComplete;
-
-  for (let index = 0; index < bookData.length; index++) {
-    if (bookData[index].id == id) {
-      bookData[index].id = id;
-      bookData[index].title = title;
-      bookData[index].author = author;
-      bookData[index].year = year;
-      bookData[index].isComplete = isComplete;
-    }
-  }
-  localStorage.setItem(storageKey, JSON.stringify(bookData));
-}
-
-searchBook.addEventListener("submit", function (event) {
-  event.preventDefault();
-  const bookData = GetBookList();
-  if (bookData.length === 0) {
-    return;
-  }
-
-  const title = document.getElementById("searchBookTitle").value;
-  if (title === null) {
-    RenderBookList(bookData);
-    return;
-  }
-  const bookList = SearchBookList(title);
-  RenderBookList(bookList);
-});
-
-function ResetAllForm() {
-  document.getElementById("inputBookTitle").value = "";
-  document.getElementById("inputBookAuthor").value = "";
-  document.getElementById("inputBookYear").value = "";
-  document.getElementById("inputBookIsComplete").checked = false;
-
-  document.getElementById("searchBookTitle").value = "";
-}
-
-window.addEventListener("load", function () {
-  if (CheckForStorage) {
-    if (localStorage.getItem(storageKey) !== null) {
-      const bookData = GetBookList();
-      RenderBookList(bookData);
-    }
-  } else {
-    alert("Browser yang Anda gunakan tidak mendukung Web Storage");
-  }
 });

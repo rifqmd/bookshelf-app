@@ -18,33 +18,33 @@
     <main>
       <section class="input_section">
         <h2>Masukkan Buku Baru</h2>
-        <form id="inputBook">
+        <form id="inputBook" data-testid="bookForm">
             <div class="input">
                 <label for="inputBookTitle">Judul</label>
-                <input id="inputBookTitle" type="text" required>
+                <input id="inputBookTitle" type="text" required data-testid="bookFormTitleInput">
             </div>
             <div class="input">
                 <label for="inputBookAuthor">Penulis</label>
-                <input id="inputBookAuthor" type="text" required>
+                <input id="inputBookAuthor" type="text" required data-testid="bookFormAuthorInput">
             </div>
             <div class="input">
                 <label for="inputBookYear">Tahun</label>
-                <input id="inputBookYear" type="number" required>
+                <input id="inputBookYear" type="number" required data-testid="bookFormYearInput">
             </div>
             <div class="input_inline">
                 <label for="inputBookIsComplete">Selesai dibaca</label>
-                <input id="inputBookIsComplete" type="checkbox">
+                <input id="inputBookIsComplete" type="checkbox" data-testid="bookFormIsCompleteCheckbox">
             </div>
-            <button id="bookSubmit" type="submit">Masukkan Buku ke rak <span>Belum selesai dibaca</span></button>
+            <button id="bookSubmit" type="submit" data-testid="bookFormSubmitButton">Masukkan Buku ke rak <span>Belum selesai dibaca</span></button>
         </form>
     </section>
 
     <section class="search_section">
         <h2>Cari Buku (Opsional)</h2>
-        <form id="searchBook">
+        <form id="searchBook" data-testid="searchBookForm">
             <label for="searchBookTitle">Judul</label>
-            <input id="searchBookTitle" type="text">
-            <button id="searchSubmit" type="submit">Cari</button>
+            <input id="searchBookTitle" type="text" data-testid="searchBookFormTitleInput">
+            <button id="searchSubmit" type="submit" data-testid="searchBookFormSubmitButton">Cari</button>
         </form>
     </section>
 
@@ -52,7 +52,21 @@
         <h2>Belum selesai dibaca</h2>
         <h6>*Edit dengan menekan judul buku</h6>
 
-        <div id="incompleteBookshelfList" class="book_list"> 
+        <div id="incompleteBookshelfList" class="book_list" data-testid="incompleteBookList"> 
+          <!-- 
+            Ini adalah struktur HTML untuk masing-masing buku.
+            Pastikan susunan elemen beserta atribut data-testid menyesuaikan seperti contoh ini.
+          -->
+          <div data-bookid="123123123" data-testid="bookItem">
+            <h3 data-testid="bookItemTitle">Judul: </h3>
+            <p data-testid="bookItemAuthor">Penulis: </p>
+            <p data-testid="bookItemYear">Tahun: </p>
+            <div>
+              <button data-testid="bookItemIsCompleteButton">Selesai dibaca</button>
+              <button data-testid="bookItemDeleteButton">Hapus Buku</button>
+              <button data-testid="bookItemEditButton">Edit Buku</button>
+            </div>
+          </div>
         </div>
     </section>
 
@@ -60,9 +74,24 @@
         <h2>Selesai dibaca</h2>
         <h6>*Edit dengan menekan judul buku</h6>
 
-        <div id="completeBookshelfList" class="book_list"> 
+        <div id="completeBookshelfList" class="book_list" data-testid="completeBookList"> 
+          <!-- 
+            Ini adalah struktur HTML untuk masing-masing buku.
+            Pastikan susunan elemen beserta atribut data-testid menyesuaikan seperti contoh ini.
+          -->
+          <div data-bookid="456456456" data-testid="bookItem">
+            <h3 data-testid="bookItemTitle">Judul: </h3>
+            <p data-testid="bookItemAuthor">Penulis: </p>
+            <p data-testid="bookItemYear">Tahun: </p>
+            <div>
+              <button data-testid="bookItemIsCompleteButton">Selesai dibaca</button>
+              <button data-testid="bookItemDeleteButton">Hapus Buku</button>
+              <button data-testid="bookItemEditButton">Edit Buku</button>
+            </div>
+          </div>
         </div>
     </section>
     </main>
   </body>
 </html>
+
